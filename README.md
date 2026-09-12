@@ -44,6 +44,17 @@ data/
 3. **Explainability** - Grad-CAM visualizations showing which regions of
    the X-ray (growth plates) the model focuses on for its prediction.
 
+## Explainability (Grad-CAM)
+
+To verify the model is focusing on clinically relevant regions (rather than
+learning spurious patterns), Grad-CAM heatmaps were generated showing which
+parts of each X-ray the model attended to when making its prediction.
+
+![Grad-CAM Example](gradcam_outputs/gradcam_1627.png)
+
+*The model focuses on the wrist/carpal bone region - anatomically consistent
+with how radiologists assess bone maturity.*
+
 ## Results
 
 | Model              | Validation MAE (months) |
@@ -60,6 +71,7 @@ dataset training would improve results further.*
 pip install -r requirements.txt
 python train_real.py        # baseline CNN
 python train_transfer.py    # transfer learning model
+python gradcam.py           # generate Grad-CAM explainability visualizations
 ```
 
 ## Tech Stack
