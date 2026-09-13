@@ -59,8 +59,15 @@ with how radiologists assess bone maturity.*
 
 | Model              | Validation MAE (months) |
 |--------------------|--------------------------|
-| Baseline CNN        | ~35-45                   |
-| Transfer Learning (EfficientNetB0) | *(update after running)* |
+| Baseline CNN (from scratch)        | ~35-45                   |
+| Transfer Learning (EfficientNetB0, fine-tuned) | **19.3** |
+
+Transfer learning improved MAE by roughly 55-58% over the from-scratch
+baseline. A key implementation detail: BatchNormalization layers inside the
+pretrained backbone were kept frozen during fine-tuning even after
+unfreezing the rest of the base model - unfreezing them destabilized
+training and caused validation MAE to worsen every epoch (77+ months) until
+this fix was applied.
 
 *Note: trained on a subset (1000 images) for fast iteration on CPU. Full
 dataset training would improve results further.*

@@ -33,7 +33,7 @@ IMG_SIZE = 128
 SUBSET_SIZE = 1000
 BATCH_SIZE = 16
 PHASE1_EPOCHS = 10
-PHASE2_EPOCHS = 5
+PHASE2_EPOCHS = 15
 
 
 #################################################################################
@@ -235,10 +235,19 @@ def train_phase1(model, train_ds, val_ds, epochs):
 
 def train_phase2(model, base_model, train_ds, val_ds, epochs):
     print(Border)
-    print("Phase 2 : Fine-tuning (base model unfrozen)")
+    print("Phase 2 : Fine-tuning (base model unfrozen, BatchNorm kept frozen)")
     print(Border)
 
     base_model.trainable = True
+
+    # IMPORTANT: Keep BatchNormalization layers frozen even though the rest
+    # of the base model is unfrozen. BatchNorm layers are very sensitive to
+    # small batch sizes / small datasets - unfreezing them causes their
+    # internal statistics to destabilize, which can wreck the model
+    # (this is a well-known issue when fine-tuning EfficientNet/ResNet etc.)
+    for layer in base_model.layers:
+        if isinstance(layer, tf.keras.layers.BatchNormalization):
+            layer.trainable = False
 
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),
@@ -246,7 +255,33 @@ def train_phase2(model, base_model, train_ds, val_ds, epochs):
         metrics=['mae']
     )
 
-    history = model.fit(train_ds, validation_data=val_ds, epochs=epochs)
+    # Save only the BEST model (lowest validation MAE seen during training),
+    # not whatever the last epoch happens to produce - fine-tuning can
+    # sometimes get worse before it gets better, or diverge entirely
+    checkpoint = tf.keras.callbacks.ModelCheckpoint(
+        "transfer_model_best.keras",
+        monitor='val_mae',
+        save_best_only=True,
+        mode='min',
+        verbose=1
+    )
+
+    # Stop early if validation MAE doesn't improve for 3 epochs in a row,
+    # and automatically restore the best weights seen - protects against
+    # exactly the kind of divergence we just saw
+    early_stop = tf.keras.callbacks.EarlyStopping(
+        monitor='val_mae',
+        patience=3,
+        restore_best_weights=True,
+        verbose=1
+    )
+
+    history = model.fit(
+        train_ds,
+        validation_data=val_ds,
+        epochs=epochs,
+        callbacks=[checkpoint, early_stop]
+    )
 
     return history
 
