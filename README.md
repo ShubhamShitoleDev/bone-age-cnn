@@ -86,9 +86,3 @@ python gradcam.py           # generate Grad-CAM explainability visualizations
 - Python, TensorFlow/Keras
 - Pandas, NumPy, scikit-learn
 - EfficientNetB0 (transfer learning)
-
-## Future Improvements
-
-- Train on full dataset (12,600 images) rather than a subset
-- Add gender as a secondary model input (bone maturity differs by gender)
-- Deploy as a Streamlit web app with Grad-CAM visualization
